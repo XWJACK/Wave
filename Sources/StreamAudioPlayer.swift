@@ -14,11 +14,20 @@ public protocol StreamAudioPlayerDelegate: class {
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDuration duration: TimeInterval)
     /// 成功解析到帧总量，可以在这个回调中设置`packetPerLoad`
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDataPacketCount dataPacketCount: UInt64)
+    func streamAudioPlayer(_ player: StreamAudioPlayer, playerStatusChange status: StreamAudioPlayerStatus)
+//    func streamAudioPlayer(_ player: StreamAudioPlayer)
 }
 
 public extension StreamAudioPlayerDelegate {
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDuration duration: TimeInterval) {}
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDataPacketCount dataPacketCount: UInt64) {}
+}
+
+public enum StreamAudioPlayerStatus {
+    case waitting
+    case playing
+    case paused
+    case stoped
 }
 
 open class StreamAudioPlayer {
@@ -35,21 +44,14 @@ open class StreamAudioPlayer {
     /// 总时长
     public private(set) var duration: TimeInterval = 0
     /// 当前播放的时间
-    public var currentTime: TimeInterval {
-        guard let audioQueue = audioQueue,
-            audioStreamDescription.mSampleRate != 0 else { return 0 }
-        
-        var time: AudioTimeStamp = AudioTimeStamp()
-        /// 这里获取的是播放时间
-        status = AudioQueueGetCurrentTime(audioQueue, nil, &time, nil)
-        guard status == noErr else { return 0 }
-        return time.mSampleTime / audioStreamDescription.mSampleRate
-    }
+    public var currentTime: TimeInterval { return playedTime() + timeOffset }
     /// 队列是否在运行
     public private(set) var isRunning: Bool = false
     
     /// 当前帧偏移量
     private var currentOffset: Int = 0
+    /// 时间偏移量
+    private var timeOffset: TimeInterval = 0
     /// 音频流处理器ID
     private var audioFileStreamID: AudioFileStreamID? = nil
     /// 音频文件信息
@@ -159,7 +161,25 @@ open class StreamAudioPlayer {
         guard let audioQueue = audioQueue else { return }
         status = AudioQueueStop(audioQueue, true)
         assert(noErr == status)
+        isFirstPlaying = true
+        timeOffset = 0
+        currentOffset = 0
     }
+    
+    @discardableResult
+    open func seek(toTime time: TimeInterval) -> Bool {
+        stop()
+        guard time <= duration else { return false }
+        timeOffset = time - playedTime()
+        currentOffset = Int(time / duration * Double(packets.count))
+        return true
+    }
+    
+//    open func reset() {
+//        guard let audioQueue = audioQueue else { return }
+//        status = AudioQueueReset(audioQueue)
+//        assert(noErr == status)
+//    }
     
     open func respond(with data: Data) {
         parse(data: data)
@@ -171,6 +191,19 @@ open class StreamAudioPlayer {
             status = AudioFileStreamClose(audioFileStreamID)
             assert(noErr == status)
         }
+    }
+    
+    /// 播放的总时间
+    public final func playedTime() -> TimeInterval {
+        guard let audioQueue = audioQueue,
+            audioStreamDescription.mSampleRate != 0 else { return 0 }
+        
+        var time: AudioTimeStamp = AudioTimeStamp()
+        /// 这里获取的是播放时间， 第一个需要注意的时这个播放时间是指实际播放的时间和一般理解上的播放进度是有区别的。
+        /// 举个例子，开始播放8秒后用户操作slider把播放进度seek到了第20秒之后又播放了3秒钟，此时通常意义上播放时间应该是23秒，即播放进度；
+        /// 而用GetCurrentTime方法中获得的时间为11秒，即实际播放时间。所以每次seek时都必须保存seek的timingOffset：
+        status = AudioQueueGetCurrentTime(audioQueue, nil, &time, nil)
+        return status == noErr ? time.mSampleTime / audioStreamDescription.mSampleRate : 0
     }
     
     private func createAudioQueue() {
@@ -247,12 +280,14 @@ open class StreamAudioPlayer {
             copiedSize += packetData.count
         }
         
+        /// 将音频加入到队列
         status = AudioQueueEnqueueBuffer(audioQueue!,
                                          newAudioQueueBuffer!,
                                          UInt32(inQueueDescriptions.count),
                                          inQueueDescriptions)
-        assert(noErr == status)
-        print("enter\(currentOffset) - \(endOffset)")
+//        assert(noErr == status)//TODO: 持续移动的时候会报 kAudioQueueErr_EnqueueDuringReset❌，暂时不知道如何处理
+        
+        
         currentOffset = endOffset
     }
     
@@ -263,6 +298,5 @@ open class StreamAudioPlayer {
                                            (data as NSData).bytes,
                                            AudioFileStreamParseFlags(rawValue: 0))//.discontinuity
         assert(noErr == status)
-        //        return status == noErr ? nil : AudioPlayerError.streamAudioPlayerError(.AudioFileStreamParseBytes(status))
     }
 }
