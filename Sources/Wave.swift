@@ -8,6 +8,6 @@
 
 import Foundation
 
-func converInstance<T: AnyObject>(by pointee: UnsafeMutableRawPointer) -> T {
+public func converInstance<T: AnyObject>(by pointee: UnsafeMutableRawPointer) -> T {
     return Unmanaged<T>.fromOpaque(pointee).takeUnretainedValue()
 }

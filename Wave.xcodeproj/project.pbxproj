@@ -7,27 +7,21 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0434A1391EB1885100F93580 /* StreamAudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0434A1381EB1885100F93580 /* StreamAudioPlayer.swift */; };
+		0434A13A1EB1885100F93580 /* StreamAudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0434A1381EB1885100F93580 /* StreamAudioPlayer.swift */; };
 		047614841EB07F5100521FD0 /* Wave.h in Headers */ = {isa = PBXBuildFile; fileRef = 047614831EB07F4D00521FD0 /* Wave.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		047614851EB07F5200521FD0 /* Wave.h in Headers */ = {isa = PBXBuildFile; fileRef = 047614831EB07F4D00521FD0 /* Wave.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		047614881EB07FC100521FD0 /* Wave.swift in Sources */ = {isa = PBXBuildFile; fileRef = 047614871EB07FC100521FD0 /* Wave.swift */; };
 		047614891EB07FC100521FD0 /* Wave.swift in Sources */ = {isa = PBXBuildFile; fileRef = 047614871EB07FC100521FD0 /* Wave.swift */; };
-		0476148B1EB07FED00521FD0 /* WAudioOutputQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0476148A1EB07FED00521FD0 /* WAudioOutputQueue.swift */; };
-		0476148C1EB07FED00521FD0 /* WAudioOutputQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0476148A1EB07FED00521FD0 /* WAudioOutputQueue.swift */; };
-		0476148E1EB0802700521FD0 /* WAudioFileStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0476148D1EB0802700521FD0 /* WAudioFileStream.swift */; };
-		0476148F1EB0802700521FD0 /* WAudioFileStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0476148D1EB0802700521FD0 /* WAudioFileStream.swift */; };
-		047614911EB08E9F00521FD0 /* WAudioBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 047614901EB08E9F00521FD0 /* WAudioBuffer.swift */; };
-		047614921EB08E9F00521FD0 /* WAudioBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 047614901EB08E9F00521FD0 /* WAudioBuffer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0434A1381EB1885100F93580 /* StreamAudioPlayer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StreamAudioPlayer.swift; sourceTree = "<group>"; };
 		0476146B1EB07EE300521FD0 /* Wave.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Wave.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		047614791EB07EF800521FD0 /* Wave.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Wave.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		047614821EB07F4D00521FD0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		047614831EB07F4D00521FD0 /* Wave.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Wave.h; sourceTree = "<group>"; };
 		047614871EB07FC100521FD0 /* Wave.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Wave.swift; path = Sources/Wave.swift; sourceTree = "<group>"; };
-		0476148A1EB07FED00521FD0 /* WAudioOutputQueue.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WAudioOutputQueue.swift; sourceTree = "<group>"; };
-		0476148D1EB0802700521FD0 /* WAudioFileStream.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WAudioFileStream.swift; sourceTree = "<group>"; };
-		047614901EB08E9F00521FD0 /* WAudioBuffer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WAudioBuffer.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,9 +64,7 @@
 		047614811EB07F4D00521FD0 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
-				0476148D1EB0802700521FD0 /* WAudioFileStream.swift */,
-				0476148A1EB07FED00521FD0 /* WAudioOutputQueue.swift */,
-				047614901EB08E9F00521FD0 /* WAudioBuffer.swift */,
+				0434A1381EB1885100F93580 /* StreamAudioPlayer.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -207,10 +199,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				047614911EB08E9F00521FD0 /* WAudioBuffer.swift in Sources */,
+				0434A1391EB1885100F93580 /* StreamAudioPlayer.swift in Sources */,
 				047614881EB07FC100521FD0 /* Wave.swift in Sources */,
-				0476148B1EB07FED00521FD0 /* WAudioOutputQueue.swift in Sources */,
-				0476148E1EB0802700521FD0 /* WAudioFileStream.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -218,10 +208,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				047614921EB08E9F00521FD0 /* WAudioBuffer.swift in Sources */,
+				0434A13A1EB1885100F93580 /* StreamAudioPlayer.swift in Sources */,
 				047614891EB07FC100521FD0 /* Wave.swift in Sources */,
-				0476148C1EB07FED00521FD0 /* WAudioOutputQueue.swift in Sources */,
-				0476148F1EB0802700521FD0 /* WAudioFileStream.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
