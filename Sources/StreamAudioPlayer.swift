@@ -14,22 +14,21 @@ public protocol StreamAudioPlayerDelegate: class {
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDuration duration: TimeInterval)
     /// 成功解析到帧总量，可以在这个回调中设置`packetPerLoad`
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDataPacketCount dataPacketCount: UInt64)
-    func streamAudioPlayer(_ player: StreamAudioPlayer, playerStatusChange status: StreamAudioPlayerStatus)
-//    func streamAudioPlayer(_ player: StreamAudioPlayer)
+//    func streamAudioPlayer(_ player: StreamAudioPlayer, playerStatusChange status: StreamAudioPlayerStatus)
 }
 
 public extension StreamAudioPlayerDelegate {
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDuration duration: TimeInterval) {}
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDataPacketCount dataPacketCount: UInt64) {}
-    func streamAudioPlayer(_ player: StreamAudioPlayer, playerStatusChange status: StreamAudioPlayerStatus) {}
+//    func streamAudioPlayer(_ player: StreamAudioPlayer, playerStatusChange status: StreamAudioPlayerStatus) {}
 }
 
-public enum StreamAudioPlayerStatus {
-    case waitting
-    case playing
-    case paused
-    case stoped
-}
+//public enum StreamAudioPlayerStatus {
+//    case waitting
+//    case playing
+//    case paused
+//    case stoped
+//}
 
 open class StreamAudioPlayer {
     
