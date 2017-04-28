@@ -21,6 +21,7 @@ public protocol StreamAudioPlayerDelegate: class {
 public extension StreamAudioPlayerDelegate {
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDuration duration: TimeInterval) {}
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDataPacketCount dataPacketCount: UInt64) {}
+    func streamAudioPlayer(_ player: StreamAudioPlayer, playerStatusChange status: StreamAudioPlayerStatus) {}
 }
 
 public enum StreamAudioPlayerStatus {
@@ -138,7 +139,6 @@ open class StreamAudioPlayer {
         
         assert(noErr == status)
         if status != noErr { return nil }
-        //        if status != noErr { throw AudioPlayerError.streamAudioPlayerError(.AudioFileStreamOpenError(status)) }
     }
     
     open func play() {
