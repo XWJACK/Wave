@@ -238,6 +238,7 @@ open class StreamAudioPlayer {
 //        /// 解析音频数据 - 解析所有进入队列的数据 -（实际解析多少数据）--------默认解析
 //        status = AudioQueuePrime(audioQueue!, 0, nil)
 //        assert(noErr == status)
+        play()
     }
     
     private func enAudioQueue() {
