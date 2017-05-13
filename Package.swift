@@ -11,5 +11,5 @@ import PackageDescription
 let package = Package(
     name: "Wave",
     dependencies : [],
-    exclude: ["Demo"]
+    exclude: ["Demo", "Dragram"]
 )
