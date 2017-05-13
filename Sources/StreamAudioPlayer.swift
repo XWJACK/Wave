@@ -14,21 +14,15 @@ public protocol StreamAudioPlayerDelegate: class {
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDuration duration: TimeInterval)
     /// 成功解析到帧总量，可以在这个回调中设置`packetPerLoad`
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDataPacketCount dataPacketCount: UInt64)
-//    func streamAudioPlayer(_ player: StreamAudioPlayer, playerStatusChange status: StreamAudioPlayerStatus)
+    /// 成功播放完队列中的音频
+    func didCompletedPlayAudio(_ player: StreamAudioPlayer)
 }
 
 public extension StreamAudioPlayerDelegate {
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDuration duration: TimeInterval) {}
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDataPacketCount dataPacketCount: UInt64) {}
-//    func streamAudioPlayer(_ player: StreamAudioPlayer, playerStatusChange status: StreamAudioPlayerStatus) {}
+    func didCompletedPlayAudio(_ player: StreamAudioPlayer) {}
 }
-
-//public enum StreamAudioPlayerStatus {
-//    case waitting
-//    case playing
-//    case paused
-//    case stoped
-//}
 
 open class StreamAudioPlayer {
     
@@ -45,7 +39,7 @@ open class StreamAudioPlayer {
     public private(set) var duration: TimeInterval = 0
     /// 当前播放的时间
     public var currentTime: TimeInterval { return playedTime() + timeOffset }
-    /// 队列是否在运行
+    /// 音频队列是否在运行
     public private(set) var isRunning: Bool = false
     
     /// 当前帧偏移量
@@ -243,7 +237,7 @@ open class StreamAudioPlayer {
     
     private func enAudioQueue() {
         /// 填充音频数据到队列中
-        guard currentOffset < packets.count else { return }//播放完成
+        guard currentOffset < packets.count else { delegate?.didCompletedPlayAudio(self); return }//播放完成
         var endOffset = currentOffset + packetPerLoad
         if endOffset >= packets.count { endOffset = packets.count }
         
