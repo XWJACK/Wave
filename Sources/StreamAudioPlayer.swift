@@ -9,6 +9,12 @@
 import Foundation
 import AudioToolbox
 
+public enum StreamAudioQueueStatus {
+    case playing
+    case paused
+    case stop
+}
+
 public protocol StreamAudioPlayerDelegate: class {
     
     /// Ask when parsed duration
@@ -44,7 +50,19 @@ public protocol StreamAudioPlayerDelegate: class {
     /// - Parameter player: StreamAudioPlayer
     func streamAudioPlayerCompletedParsedAudioInfo(_ player: StreamAudioPlayer)
     
-    //    func streamAudioPlayer(_ player: StreamAudioPlayer, queueStatusChange isRunning: Bool)
+    /// Ask when Queue status change
+    ///
+    /// - Parameters:
+    ///   - player: StreamAudioPlayer
+    ///   - status: StreamAudioQueueStatus
+    func streamAudioPlayer(_ player: StreamAudioPlayer, queueStatusChange status: StreamAudioQueueStatus)
+    
+    /// Ask
+    ///
+    /// - Parameters:
+    ///   - player: StreamAudioPlayer
+    ///   - anErrorOccur: WaveError
+    func streamAudioPlayer(_ player: StreamAudioPlayer, anErrorOccur: WaveError)
 }
 
 public extension StreamAudioPlayerDelegate {
@@ -53,6 +71,8 @@ public extension StreamAudioPlayerDelegate {
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedProgress progress: Progress){}
     func streamAudioPlayer(_ player: StreamAudioPlayer, didCompletedSeekToTime time: TimeInterval){}
     func streamAudioPlayerCompletedParsedAudioInfo(_ player: StreamAudioPlayer){}
+    func streamAudioPlayer(_ player: StreamAudioPlayer, queueStatusChange status: StreamAudioQueueStatus){}
+    func streamAudioPlayer(_ player: StreamAudioPlayer, anErrorOccur: WaveError){}
 }
 
 open class StreamAudioPlayer {
@@ -175,8 +195,10 @@ open class StreamAudioPlayer {
             }
         }, type, &audioFileStreamID)
         
-        assert(noErr == status)
-        if status != noErr { return nil }
+        if !status.isSuccess {
+            delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioFileStream(.open(status))))
+            return nil
+        }
     }
     
     open func play() {
@@ -187,24 +209,24 @@ open class StreamAudioPlayer {
             enAudioQueue()
         }
         status = AudioQueueStart(audioQueue, nil)
-        assert(noErr == status)
+        if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioQueue(.start(status)))) }
     }
     
     open func pause() {
         guard let audioQueue = audioQueue, isRunning else { return }
         isRunning = false
         status = AudioQueuePause(audioQueue)
-        assert(noErr == status)
+        if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioQueue(.pause(status)))) }
     }
     
     open func stop() {
         guard let audioQueue = audioQueue, isRunning else { return }
         isRunning = false
-        status = AudioQueueStop(audioQueue, true)
-        assert(noErr == status)
         isFirstPlaying = true
         timeOffset = 0
         currentOffset = 0
+        status = AudioQueueStop(audioQueue, true)
+        if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioQueue(.stop(status)))) }
     }
     
     @discardableResult
@@ -237,7 +259,7 @@ open class StreamAudioPlayer {
         selfInstance = nil
         if let audioFileStreamID = audioFileStreamID {
             status = AudioFileStreamClose(audioFileStreamID)
-            assert(noErr == status)
+            if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioFileStream(.close(status)))) }
         }
     }
     
@@ -251,7 +273,8 @@ open class StreamAudioPlayer {
         /// 举个例子，开始播放8秒后用户操作slider把播放进度seek到了第20秒之后又播放了3秒钟，此时通常意义上播放时间应该是23秒，即播放进度；
         /// 而用GetCurrentTime方法中获得的时间为11秒，即实际播放时间。所以每次seek时都必须保存seek的timingOffset：
         status = AudioQueueGetCurrentTime(audioQueue, nil, &time, nil)
-        return status == noErr ? time.mSampleTime / audioStreamDescription.mSampleRate : 0
+        if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioQueue(.getCurrentTime(status)))) }
+        return status.isSuccess ? time.mSampleTime / audioStreamDescription.mSampleRate : 0
     }
     
     private func createAudioQueue() {
@@ -269,7 +292,7 @@ open class StreamAudioPlayer {
             mySelf.enAudioQueue()
         }, selfInstance, CFRunLoopGetMain(), nil, 0, &audioQueue)
         
-        assert(noErr == status)
+        if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioQueue(.newOutput(status)))) }
         
         /// 添加属性监听事件 - 是否正在运行
         //        status = AudioQueueAddPropertyListener(audioQueue!, kAudioQueueProperty_IsRunning, { (inUserData, inAQ, inID) in
@@ -309,7 +332,8 @@ open class StreamAudioPlayer {
         status = AudioQueueAllocateBuffer(audioQueue!,
                                           UInt32(totalSize),
                                           &newAudioQueueBuffer)
-        assert(noErr == status)
+        
+        if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioQueue(.allocateBuffer(status)))) }
         
         
         newAudioQueueBuffer?.pointee.mAudioDataByteSize = UInt32(totalSize)
@@ -334,10 +358,12 @@ open class StreamAudioPlayer {
                                          newAudioQueueBuffer!,
                                          UInt32(inQueueDescriptions.count),
                                          inQueueDescriptions)
-        //        assert(noErr == status)//TODO: 持续移动的时候会报 kAudioQueueErr_EnqueueDuringReset❌，暂时不知道如何处理
+        //TODO: 持续移动的时候会报 kAudioQueueErr_EnqueueDuringReset❌，暂时不知道如何处理
         
         
         currentOffset = endOffset
+        
+        if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioQueue(.enqueueBuffer(status)))) }
     }
     
     private func parse(data: Data) {
@@ -346,6 +372,6 @@ open class StreamAudioPlayer {
                                            UInt32(data.count),
                                            (data as NSData).bytes,
                                            AudioFileStreamParseFlags(rawValue: 0))//.discontinuity
-        assert(noErr == status)
+        if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioFileStream(.perseBytes(status)))) }
     }
 }
