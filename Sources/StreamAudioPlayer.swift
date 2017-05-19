@@ -68,7 +68,9 @@ public protocol StreamAudioPlayerDelegate: class {
 public extension StreamAudioPlayerDelegate {
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDuration duration: TimeInterval?){}
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDataPacketCount dataPacketCount: UInt64) {}
-    func streamAudioPlayer(_ player: StreamAudioPlayer, parsedProgress progress: Progress){}
+    func streamAudioPlayer(_ player: StreamAudioPlayer, parsedProgress progress: Progress){
+        if progress.fractionCompleted > 0.001 { player.play() }
+    }
     func streamAudioPlayer(_ player: StreamAudioPlayer, didCompletedSeekToTime time: TimeInterval){}
     func streamAudioPlayerCompletedParsedAudioInfo(_ player: StreamAudioPlayer){}
     func streamAudioPlayer(_ player: StreamAudioPlayer, queueStatusChange status: StreamAudioQueueStatus){}

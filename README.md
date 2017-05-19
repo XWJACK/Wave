@@ -60,13 +60,11 @@ Run `carthage update` to build the framework and drag the built `Wave.framework`
 
 ```swift
 let player = StreamAudioPlayer()
-// Response Data from Network or local.
 ```
 
 2. Then response data from network or local
 
 ```swift
-// It will auto play when parsed audio data.
 player.response(with: data)
 ```
 
