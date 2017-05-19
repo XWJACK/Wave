@@ -66,12 +66,24 @@ let player = StreamAudioPlayer()
 
 ```swift
 player.response(with: data)
+/// player will auto play when parsed audio data.
 ```
 
 3. Set Delegate to Self
 
 ```swift
 player.delegate = self
+
+/// You can custom decided when to play audio.
+func streamAudioPlayer(_ player: StreamAudioPlayer, parsedProgress progress: Progress) {
+    if progress.fractionCompleted > 0.001 { player.play() }
+}
+
+/// If you seek to time that has not been response from data, it will waiting.
+/// It will asks this delegate when parse data that can been seek to this time.
+func streamAudioPlayer(_ player: StreamAudioPlayer, didCompletedSeekToTime time: TimeInterval) {
+    /// do some this that you want. Like display indicator.
+}
 ```
 
 4. Control
@@ -80,6 +92,8 @@ player.delegate = self
 player?.play()
 player?.pause()
 player?.stop()
+/// Return true if time is already can be seek, or this time is out of range between 0 to duration.
+/// Otherwise you can using delegate to listen if data is not full parsed.
 player?.seek(toTime: 1024)
 ```
 
