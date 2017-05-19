@@ -61,12 +61,8 @@ class ViewController: UIViewController {
 }
 
 extension ViewController: StreamAudioPlayerDelegate {
-    
-    func didCompletedPlayAudio(_ player: StreamAudioPlayer) {
-        print("Comleted")
-    }
-    
-    func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDuration duration: TimeInterval) {
+    func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDuration duration: TimeInterval?) {
+        guard let duration = duration else { return }
         slide.maximumValue = Float(duration)
         durationLabel.text = duration.timeFormater
     }
