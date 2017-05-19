@@ -62,7 +62,7 @@ public protocol StreamAudioPlayerDelegate: class {
     /// - Parameters:
     ///   - player: StreamAudioPlayer
     ///   - anErrorOccur: WaveError
-    func streamAudioPlayer(_ player: StreamAudioPlayer, anErrorOccur: WaveError)
+    func streamAudioPlayer(_ player: StreamAudioPlayer, anErrorOccur error: WaveError)
 }
 
 public extension StreamAudioPlayerDelegate {
@@ -74,7 +74,7 @@ public extension StreamAudioPlayerDelegate {
     func streamAudioPlayer(_ player: StreamAudioPlayer, didCompletedSeekToTime time: TimeInterval){}
     func streamAudioPlayerCompletedParsedAudioInfo(_ player: StreamAudioPlayer){}
     func streamAudioPlayer(_ player: StreamAudioPlayer, queueStatusChange status: StreamAudioQueueStatus){}
-    func streamAudioPlayer(_ player: StreamAudioPlayer, anErrorOccur: WaveError){}
+    func streamAudioPlayer(_ player: StreamAudioPlayer, anErrorOccur error: WaveError){}
 }
 
 open class StreamAudioPlayer {
