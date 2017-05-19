@@ -61,24 +61,8 @@ class ViewController: UIViewController {
 }
 
 extension ViewController: StreamAudioPlayerDelegate {
-    
-    func streamAudioPlayer(_ player: StreamAudioPlayer, playerStatusChange status: StreamAudioPlayerStatus) {
-        
-        indicator.isHidden = true
-        
-        switch status {
-        case .waitting:
-            indicator.isHidden = false
-        case .playing:
-            switchView.isOn = true
-        case .paused:
-            switchView.isOn = false
-        case .stoped:
-            switchView.isOn = false
-        }
-    }
-    
-    func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDuration duration: TimeInterval) {
+    func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDuration duration: TimeInterval?) {
+        guard let duration = duration else { return }
         slide.maximumValue = Float(duration)
         durationLabel.text = duration.timeFormater
     }
