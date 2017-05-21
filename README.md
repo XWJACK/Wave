@@ -5,7 +5,7 @@
 ![macOS 10.9+](https://img.shields.io/badge/macOS-10.9%2B-blue.svg)
 ![Swift 3.1+](https://img.shields.io/badge/Swift-3.0%2B-orange.svg)
 ![Carthage compatible](https://img.shields.io/badge/Carthage-compatible-brightgreen.svg)
-![pod](https://img.shields.io/badge/pod-v0.1.1-brightgreen.svg)
+![pod](https://img.shields.io/badge/pod-v0.2.0-brightgreen.svg)
 
 ## Overview
 
@@ -49,7 +49,7 @@ $ brew install carthage
 To integrate Wave into your Xcode project using Carthage, specify it in your `Cartfile`:
 
 ```ogdl
-github "XWJACK/Wave" ~> 0.1.0
+github "XWJACK/Wave" ~> 0.2.0
 ```
 
 Run `carthage update` to build the framework and drag the built `Wave.framework` into your Xcode project.
@@ -74,16 +74,42 @@ player.response(with: data)
 ```swift
 player.delegate = self
 
-/// You can custom decided when to play audio.
-func streamAudioPlayer(_ player: StreamAudioPlayer, parsedProgress progress: Progress) {
-    if progress.fractionCompleted > 0.001 { player.play() }
-}
+    /// You can custom decided when to play audio, default is `progress.fractionCompleted > 0.01`
+    func streamAudioPlayer(_ player: StreamAudioPlayer, parsedProgress progress: Progress) {
+        if progress.fractionCompleted > 0.01 { player.play() }
+    }
 
-/// If you seek to time that has not been response from data, it will waiting.
-/// It will asks this delegate when parse data that can been seek to this time.
-func streamAudioPlayer(_ player: StreamAudioPlayer, didCompletedSeekToTime time: TimeInterval) {
-    /// do some this that you want. Like display indicator.
-}
+    func streamAudioPlayerCompletedParsedAudioInfo(_ player: StreamAudioPlayer) {
+        DispatchQueue.main.async {
+            /// Audio info has been parsed that you can seek.
+        }
+    }
+    
+    func streamAudioPlayer(_ player: StreamAudioPlayer, didCompletedPlayFromTime time: TimeInterval) {
+        DispatchQueue.main.async {
+            /// Seek to time successful or resume play when data has been parsed.
+            self.player?.play()
+        }
+    }
+    
+    func streamAudioPlayer(_ player: StreamAudioPlayer, didCompletedPlayAudio isEnd: Bool) {
+        DispatchQueue.main.async {
+            if isEnd {
+                /// Go next music
+            } else {
+                /// Resume play because of waiting audio data.
+            }
+        }
+    }
+    
+    /// Progress for parse data
+    func streamAudioPlayer(_ player: StreamAudioPlayer, parsedProgress progress: Progress) {
+        DispatchQueue.main.async {
+            if progress.fractionCompleted > 0.01 {
+                self.player?.play()
+            }
+        }
+    }
 ```
 
 4. Control
@@ -100,4 +126,9 @@ player?.seek(toTime: 1024)
 ## Flow Diagram for StreamAudioPlayer
 
 ![AudioToolBox StreamAudioPlayer](http://o9omj1fgd.bkt.clouddn.com/blog/Music/images/AudioToolBox_StreamAudioPlayer.png)
+
+## Demo
+
+The best demo is my graduation project: [Music](https://github.com/XWJACK/Music)
+
 

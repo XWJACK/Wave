@@ -42,128 +42,137 @@ public protocol StreamAudioPlayerDelegate: class {
     ///
     /// - Parameters:
     ///   - player: StreamAudioPlayer
-    ///   - time: seek to time
-    func streamAudioPlayer(_ player: StreamAudioPlayer, didCompletedSeekToTime time: TimeInterval)
+    ///   - time: Play from time, contain seek
+    func streamAudioPlayer(_ player: StreamAudioPlayer, didCompletedPlayFromTime time: TimeInterval)
     
     /// Ask completed parsed audio infomation
     ///
     /// - Parameter player: StreamAudioPlayer
     func streamAudioPlayerCompletedParsedAudioInfo(_ player: StreamAudioPlayer)
     
+    /// Ask completed play audio
+    ///
+    /// - Parameters:
+    ///   - player: StreamAudioPlayer
+    ///   - isEnd: Is end to audio file,
+    ///            true: End of audio file
+    ///            false: Have no audio file can be play.
+    func streamAudioPlayer(_ player: StreamAudioPlayer, didCompletedPlayAudio isEnd: Bool)
+    
     /// Ask when Queue status change
     ///
     /// - Parameters:
     ///   - player: StreamAudioPlayer
     ///   - status: StreamAudioQueueStatus
-    func streamAudioPlayer(_ player: StreamAudioPlayer, queueStatusChange status: StreamAudioQueueStatus)
+    //    func streamAudioPlayer(_ player: StreamAudioPlayer, queueStatusChange status: StreamAudioQueueStatus)
     
     /// Ask
     ///
     /// - Parameters:
     ///   - player: StreamAudioPlayer
     ///   - anErrorOccur: WaveError
-    func streamAudioPlayer(_ player: StreamAudioPlayer, anErrorOccur: WaveError)
+    func streamAudioPlayer(_ player: StreamAudioPlayer, anErrorOccur error: WaveError)
 }
 
 public extension StreamAudioPlayerDelegate {
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDuration duration: TimeInterval?){}
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDataPacketCount dataPacketCount: UInt64) {}
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedProgress progress: Progress){
-        if progress.fractionCompleted > 0.001 { player.play() }
+        if progress.fractionCompleted > 0.01 { player.play() }
     }
-    func streamAudioPlayer(_ player: StreamAudioPlayer, didCompletedSeekToTime time: TimeInterval){}
+    func streamAudioPlayer(_ player: StreamAudioPlayer, didCompletedPlayFromTime time: TimeInterval){}
     func streamAudioPlayerCompletedParsedAudioInfo(_ player: StreamAudioPlayer){}
-    func streamAudioPlayer(_ player: StreamAudioPlayer, queueStatusChange status: StreamAudioQueueStatus){}
-    func streamAudioPlayer(_ player: StreamAudioPlayer, anErrorOccur: WaveError){}
+    //    func streamAudioPlayer(_ player: StreamAudioPlayer, queueStatusChange status: StreamAudioQueueStatus){}
+    func streamAudioPlayer(_ player: StreamAudioPlayer, anErrorOccur error: WaveError){}
+    func streamAudioPlayer(_ player: StreamAudioPlayer, didCompletedPlayAudio isEnd: Bool){}
 }
 
 open class StreamAudioPlayer {
     
     open weak var delegate: StreamAudioPlayerDelegate?
-    /// 每次载入多少帧的数据
+    /// How many packets when loaded
     open var packetPerLoad: Int = 500
-    /// 音频的码率
+    /// Audio bit rate
     public private(set) var bitRate: UInt32 = 0
-    /// 音频数据总量
+    /// Number of audio data bytes
     public private(set) var dataByteCount: UInt64 = 0
-    /// 音频帧总量
+    /// Number of audio data packets
     public private(set) var dataPacketCount: UInt64 = 0
-    /// 总时长
+    /// Duration
     public private(set) var duration: TimeInterval = 0
-    /// 当前播放的时间
+    /// Current time
     public var currentTime: TimeInterval { return playedTime() + timeOffset }
-    /// 音频队列是否在运行
+    /// Audio queue is running
     public private(set) var isRunning: Bool = false
     
-    /// 当前帧偏移量
+    /// Current packet offset
     private var currentOffset: Int = 0
-    /// 时间偏移量
+    /// Time offset
     private var timeOffset: TimeInterval = 0
-    /// 音频流处理器ID
+    /// Audio file Stream identifier, define union audio file stream
     private var audioFileStreamID: AudioFileStreamID? = nil
-    /// 音频文件信息
+    /// Audio file stream description for audio
     private var audioStreamDescription: AudioStreamBasicDescription = AudioStreamBasicDescription()
-    /// 音频队列
+    /// Audio queue refrence
     private var audioQueue: AudioQueueRef? = nil
-    /// 所有的帧
-    private var packets: [Data] = []//[(packet: Data, description: AudioStreamPacketDescription)] = []
-    /// 返回码
+    /// All packets for audio
+    private var packets: [Data] = []
+    /// Status code
     private var status: OSStatus = noErr
-    /// 自身实例
+    /// Self instance
     private var selfInstance: UnsafeMutableRawPointer? = nil
-    /// 是否是第一次播放
+    /// Is first playing audio
     private var isFirstPlaying: Bool = true
-    /// seek 到哪一帧
-    private var seekToTime: TimeInterval?
+    
+    private var tempOffset: Int?
     
     public init?(_ type: AudioFileTypeID = kAudioFileMP3Type) {
         
         selfInstance = unsafeBitCast(self, to: UnsafeMutableRawPointer.self)
         
-        /// 创建并打开一个音频文件流处理对象：
-        /// 成功：得到音频流处理器ID
+        /// Create and open an audio file stream
         status = AudioFileStreamOpen(selfInstance, { (inClientData, inAudioFileStream, inPropertyID, ioFlags) in
             /// 歌曲信息解析的回调
             
             let mySelf: StreamAudioPlayer = converInstance(by: inClientData)
-            /// 属性大小
+            /// Property size
             var propertySize: UInt32 = 0
-            /// On output, true if the property can be written. Currently, there are no writable audio file stream properties.（暂时不知道什么意思）
+            /// On output, true if the property can be written. Currently, there are no writable audio file stream properties.（I have no idea）
             var writable: DarwinBoolean = false
             
-            /// 获取属性大小
+            /// Get property size
             AudioFileStreamGetPropertyInfo(inAudioFileStream, inPropertyID, &propertySize, &writable)
             
             switch inPropertyID {
-            case kAudioFileStreamProperty_BitRate:// 解析到码率：常用有(128000,320000)
+            case kAudioFileStreamProperty_BitRate:/// (128000,320000,....)
                 AudioFileStreamGetProperty(inAudioFileStream, inPropertyID, &propertySize, &mySelf.bitRate)
                 
-            case kAudioFileStreamProperty_AudioDataByteCount: //解析到音频文件中音频数据的总量
+            case kAudioFileStreamProperty_AudioDataByteCount:
                 AudioFileStreamGetProperty(inAudioFileStream, inPropertyID, &propertySize, &mySelf.dataByteCount)
                 
-            case kAudioFileStreamProperty_AudioDataPacketCount: //解析到音频文件中帧数量
+            case kAudioFileStreamProperty_AudioDataPacketCount:
                 AudioFileStreamGetProperty(inAudioFileStream, inPropertyID, &propertySize, &mySelf.dataPacketCount)
                 
                 /// Assigned `packets` capacity to keep `append` thread-safe
                 mySelf.packets.reserveCapacity(Int(mySelf.dataPacketCount))
                 mySelf.delegate?.streamAudioPlayer(mySelf, parsedDataPacketCount: mySelf.dataPacketCount)
-            case kAudioFileStreamProperty_DataFormat: //解析到音频文件结构信息
-                
+            case kAudioFileStreamProperty_DataFormat:
                 AudioFileStreamGetProperty(inAudioFileStream, inPropertyID, &propertySize, &mySelf.audioStreamDescription)
                 
             case kAudioFileStreamProperty_ReadyToProducePackets: //解析属性完成，接下来进行帧分离
                 
-                //                if mySelf.bitRate <= 0 {
-                //                    mySelf.delegate?.streamAudioPlayer(mySelf, parsedDuration: nil)
-                //                } else {
-                /// 计算总时长
-                mySelf.duration = (Double(mySelf.dataByteCount) * 8 ) / Double(mySelf.bitRate)
-                mySelf.delegate?.streamAudioPlayer(mySelf, parsedDuration: mySelf.duration)
-                //                }
+                if mySelf.bitRate > 0 {
+                    /// Calculate duration
+                    mySelf.duration = (Double(mySelf.dataByteCount) * 8 ) / Double(mySelf.bitRate)
+                    mySelf.delegate?.streamAudioPlayer(mySelf, parsedDuration: mySelf.duration)
+                } else {
+                    mySelf.delegate?.streamAudioPlayer(mySelf, parsedDuration: nil)
+                }
                 
                 mySelf.delegate?.streamAudioPlayerCompletedParsedAudioInfo(mySelf)
                 
                 /// Need to keep create audio queue in main thread.
+                // TODO: Is must in main thread or need thread runloop?
                 DispatchQueue.main.async {
                     mySelf.createAudioQueue()
                 }
@@ -171,17 +180,16 @@ open class StreamAudioPlayer {
             }
         }, { (inClientData, inNumberBytes, inNumberPackets, inInputData, inPacketDescriptions) in
             
-            /// 分离帧的回调
-            
             guard inNumberBytes != 0 && inNumberPackets != 0 else { return }
             let mySelf: StreamAudioPlayer = converInstance(by: inClientData)
             
-            /// 手动分离的帧，并将帧保存起来，用于播放
+            /// Save packet
             for i in 0..<Int(inNumberPackets) {
                 let paketOffset = inPacketDescriptions[i].mStartOffset
                 let paketSize = inPacketDescriptions[i].mDataByteSize
                 let packetData = NSData(bytes: inInputData.advanced(by: Int(paketOffset)), length: Int(paketSize)) as Data
-                mySelf.packets.append(packetData)//(packetData, inPacketDescriptions.pointee))//如果这里去保存每一帧的信息，其中mStartOffset都是0，但是在队列中播放的时候是连续的帧偏移。
+                mySelf.packets.append(packetData)//(packetData, inPacketDescriptions.pointee))
+                //如果这里去保存每一帧的信息，其中mStartOffset都是0，但是在队列中播放的时候是连续的帧偏移。
             }
             
             if mySelf.dataPacketCount > 0 {
@@ -190,10 +198,10 @@ open class StreamAudioPlayer {
                 mySelf.delegate?.streamAudioPlayer(mySelf, parsedProgress: progress)
             }
             
-            if let time = mySelf.seekToTime,
-                time * Double(mySelf.dataPacketCount) < mySelf.duration * Double(mySelf.packets.count) {
-                mySelf.seekToTime = nil
-                mySelf.delegate?.streamAudioPlayer(mySelf, didCompletedSeekToTime: time)
+            if let offSet = mySelf.tempOffset,
+                offSet < mySelf.packets.count {
+                mySelf.tempOffset = nil
+                mySelf.delegate?.streamAudioPlayer(mySelf, didCompletedPlayFromTime: Double(offSet) * mySelf.duration / Double(mySelf.dataPacketCount))
             }
         }, type, &audioFileStreamID)
         
@@ -206,7 +214,7 @@ open class StreamAudioPlayer {
     open func play() {
         guard let audioQueue = audioQueue, !isRunning else { return }
         isRunning = true
-        if isFirstPlaying {/// 第一次播放的时候队列中没有数据，需要将数据压入队列中。
+        if isFirstPlaying {/// Need to enter packets to audio queue when first play
             isFirstPlaying = false
             enAudioQueue()
         }
@@ -239,11 +247,11 @@ open class StreamAudioPlayer {
         timeOffset = time - playedTime()
         
         if currentOffset > packets.count {
-            seekToTime = time
+            tempOffset = currentOffset
             return false
         }
         
-        delegate?.streamAudioPlayer(self, didCompletedSeekToTime: time)
+        delegate?.streamAudioPlayer(self, didCompletedPlayFromTime: time)
         return true
     }
     
@@ -265,7 +273,9 @@ open class StreamAudioPlayer {
         }
     }
     
-    /// 播放的总时间
+    /// AudioQueue has been running time, not current play time
+    ///
+    /// - Returns: TimeInterval
     public final func playedTime() -> TimeInterval {
         guard let audioQueue = audioQueue,
             audioStreamDescription.mSampleRate != 0 else { return 0 }
@@ -280,15 +290,14 @@ open class StreamAudioPlayer {
     }
     
     private func createAudioQueue() {
-        
-        /// 新建音频输出队列
+        /// New output audio queue
         status = AudioQueueNewOutput(&audioStreamDescription, { (inUserData, inAQ, inBuffer) in
             /// 每次播放器需要播放音频数据的时候就会调用，一般这个时候inBuffer已经播放完成了，可以从队列中移除了。
             /// 这里采用没次都创建一定capacity的Buffer
             
             let mySelf: StreamAudioPlayer = converInstance(by: inUserData!)
             guard !mySelf.isFirstPlaying else { return }
-            /// 清除队列中已经播放完成的缓存
+            /// Free aleardy played buffer, it can been reused.
             AudioQueueFreeBuffer(inAQ, inBuffer)
             
             mySelf.enAudioQueue()
@@ -316,21 +325,32 @@ open class StreamAudioPlayer {
     }
     
     private func enAudioQueue() {
-        /// 填充音频数据到队列中
-        guard currentOffset < packets.count else { return }//播放队列中没有数据可以播放（可能数据断了，还没有过来，或者数据已经全部播放完成）
+        
+        guard currentOffset < packets.count else {
+            /// All audio datas were play completed
+            if UInt64(currentOffset) >= dataPacketCount { delegate?.streamAudioPlayer(self, didCompletedPlayAudio: true) }
+                /// Waitting for data to resume play
+            else {
+                tempOffset = currentOffset
+                isFirstPlaying = true
+                delegate?.streamAudioPlayer(self, didCompletedPlayAudio: false)
+            }
+            return
+        }
+        
         var endOffset = currentOffset + packetPerLoad
         if endOffset >= packets.count { endOffset = packets.count }
         
         
-        /// 创建新的Buffer
+        /// New buffer
         var newAudioQueueBuffer: AudioQueueBufferRef? = nil
-        /// ⚠️这里的类型是ArraySlice
+        /// How many data need to enter queue
         var inQueueDatas: ArraySlice<Data> = packets[currentOffset..<endOffset]
         var inQueueDescriptions: [AudioStreamPacketDescription] = []
-        /// 进入队列中总数据大小
+        /// Total data size
         let totalSize = inQueueDatas.reduce(0, { $0 + $1.count })
         
-        /// 分配空间
+        /// Allocate buffer
         status = AudioQueueAllocateBuffer(audioQueue!,
                                           UInt32(totalSize),
                                           &newAudioQueueBuffer)
@@ -344,7 +364,7 @@ open class StreamAudioPlayer {
         var copiedSize = 0
         for i in currentOffset..<endOffset {
             let packetData = inQueueDatas[i]
-            /// 填充音频数据
+            /// Copy data to buffer
             memcpy(newAudioQueueBuffer?.pointee.mAudioData.advanced(by: copiedSize),
                    (packetData as NSData).bytes,
                    packetData.count)
@@ -355,7 +375,7 @@ open class StreamAudioPlayer {
             copiedSize += packetData.count
         }
         
-        /// 将音频加入到队列
+        /// Enter buffer to audio queue
         status = AudioQueueEnqueueBuffer(audioQueue!,
                                          newAudioQueueBuffer!,
                                          UInt32(inQueueDescriptions.count),
@@ -369,7 +389,7 @@ open class StreamAudioPlayer {
     }
     
     private func parse(data: Data) {
-        /// 向指定的流处理器中添加需要解析的数据
+        /// Tell audio file stream to parse data.
         status = AudioFileStreamParseBytes(audioFileStreamID!,
                                            UInt32(data.count),
                                            (data as NSData).bytes,
