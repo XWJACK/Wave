@@ -132,12 +132,13 @@ open class StreamAudioPlayer {
         
         /// Create and open an audio file stream
         status = AudioFileStreamOpen(selfInstance, { (inClientData, inAudioFileStream, inPropertyID, ioFlags) in
-            /// 歌曲信息解析的回调
+            /// Call back for parse audio info.
             
             let mySelf: StreamAudioPlayer = converInstance(by: inClientData)
             /// Property size
             var propertySize: UInt32 = 0
-            /// On output, true if the property can be written. Currently, there are no writable audio file stream properties.（I have no idea）
+            /// On output, true if the property can be written. Currently, there are no writable audio file stream properties.
+            /// (I have no idea about this property.)
             var writable: DarwinBoolean = false
             
             /// Get property size
@@ -156,11 +157,11 @@ open class StreamAudioPlayer {
                 /// Assigned `packets` capacity to keep `append` thread-safe
                 mySelf.packets.reserveCapacity(Int(mySelf.dataPacketCount))
                 mySelf.delegate?.streamAudioPlayer(mySelf, parsedDataPacketCount: mySelf.dataPacketCount)
+                
             case kAudioFileStreamProperty_DataFormat:
                 AudioFileStreamGetProperty(inAudioFileStream, inPropertyID, &propertySize, &mySelf.audioStreamDescription)
                 
-            case kAudioFileStreamProperty_ReadyToProducePackets: //解析属性完成，接下来进行帧分离
-                
+            case kAudioFileStreamProperty_ReadyToProducePackets: /// Completed perase audio infomation
                 if mySelf.bitRate > 0 {
                     /// Calculate duration
                     mySelf.duration = (Double(mySelf.dataByteCount) * 8 ) / Double(mySelf.bitRate)
@@ -171,11 +172,8 @@ open class StreamAudioPlayer {
                 
                 mySelf.delegate?.streamAudioPlayerCompletedParsedAudioInfo(mySelf)
                 
-                /// Need to keep create audio queue in main thread.
-                // TODO: Is must in main thread or need thread runloop?
-                DispatchQueue.main.async {
-                    mySelf.createAudioQueue()
-                }
+                mySelf.createAudioQueue()
+                
             default: break
             }
         }, { (inClientData, inNumberBytes, inNumberPackets, inInputData, inPacketDescriptions) in
@@ -203,6 +201,7 @@ open class StreamAudioPlayer {
                 mySelf.tempOffset = nil
                 mySelf.delegate?.streamAudioPlayer(mySelf, didCompletedPlayFromTime: Double(offSet) * mySelf.duration / Double(mySelf.dataPacketCount))
             }
+            
         }, type, &audioFileStreamID)
         
         if !status.isSuccess {
@@ -301,11 +300,11 @@ open class StreamAudioPlayer {
             AudioQueueFreeBuffer(inAQ, inBuffer)
             
             mySelf.enAudioQueue()
-        }, selfInstance, CFRunLoopGetMain(), nil, 0, &audioQueue)
+        }, selfInstance, nil, nil, 0, &audioQueue)/// The event loop on which the callback function pointed to by the inCallbackProc parameter is to be called. If you specify NULL, the callback is invoked on one of the audio queue’s internal threads.
         
         if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioQueue(.newOutput(status)))) }
         
-        /// 添加属性监听事件 - 是否正在运行
+        /// Add listent property
         //        status = AudioQueueAddPropertyListener(audioQueue!, kAudioQueueProperty_IsRunning, { (inUserData, inAQ, inID) in
         //            ///控制播放器的状态
         //            let mySelf: StreamAudioPlayer = converInstance(by: inUserData!)
