@@ -123,7 +123,7 @@ open class StreamAudioPlayer {
     private var selfInstance: UnsafeMutableRawPointer? = nil
     /// Is first playing audio
     private var isFirstPlaying: Bool = true
-    
+    /// Temp offSet for seek or pause because of no audio data
     private var tempOffset: Int?
     
     public init?(_ type: AudioFileTypeID = kAudioFileMP3Type) {
@@ -210,6 +210,7 @@ open class StreamAudioPlayer {
         }
     }
     
+    /// Play or resume play from last
     open func play() {
         guard let audioQueue = audioQueue, !isRunning else { return }
         isRunning = true
@@ -221,6 +222,7 @@ open class StreamAudioPlayer {
         if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioQueue(.start(status)))) }
     }
     
+    /// Pause
     open func pause() {
         guard let audioQueue = audioQueue, isRunning else { return }
         isRunning = false
@@ -228,6 +230,7 @@ open class StreamAudioPlayer {
         if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioQueue(.pause(status)))) }
     }
     
+    /// Stop
     open func stop() {
         guard let audioQueue = audioQueue, isRunning else { return }
         isRunning = false
@@ -238,6 +241,10 @@ open class StreamAudioPlayer {
         if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioQueue(.stop(status)))) }
     }
     
+    /// Seek to time
+    ///
+    /// - Parameter time: TimeInterval
+    /// - Returns: Is success
     @discardableResult
     open func seek(toTime time: TimeInterval) -> Bool {
         stop()
@@ -260,6 +267,9 @@ open class StreamAudioPlayer {
     //        assert(noErr == status)
     //    }
     
+    /// Response audio data
+    ///
+    /// - Parameter data: Data
     open func respond(with data: Data) {
         parse(data: data)
     }
@@ -269,6 +279,9 @@ open class StreamAudioPlayer {
         if let audioFileStreamID = audioFileStreamID {
             status = AudioFileStreamClose(audioFileStreamID)
             if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioFileStream(.close(status)))) }
+        }
+        if let audioQueue = audioQueue {
+            AudioQueueDispose(audioQueue, true)
         }
     }
     
@@ -288,6 +301,7 @@ open class StreamAudioPlayer {
         return status.isSuccess ? time.mSampleTime / audioStreamDescription.mSampleRate : 0
     }
     
+    /// Create new output audio queue
     private func createAudioQueue() {
         /// New output audio queue
         status = AudioQueueNewOutput(&audioStreamDescription, { (inUserData, inAQ, inBuffer) in
@@ -323,6 +337,7 @@ open class StreamAudioPlayer {
         //        assert(noErr == status)
     }
     
+    /// Enter buffer into audio queue
     private func enAudioQueue() {
         
         guard currentOffset < packets.count else {
@@ -387,6 +402,9 @@ open class StreamAudioPlayer {
         if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioQueue(.enqueueBuffer(status)))) }
     }
     
+    /// Parse audio
+    ///
+    /// - Parameter data: Data
     private func parse(data: Data) {
         /// Tell audio file stream to parse data.
         status = AudioFileStreamParseBytes(audioFileStreamID!,
