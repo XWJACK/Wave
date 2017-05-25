@@ -1,7 +1,7 @@
 Pod::Spec.new do |s|
 
   s.name         = "Wave"
-  s.version      = "0.2.0"
+  s.version      = "0.2.1"
   s.summary      = "XWJACK Audio Player Library"
 
   s.homepage     = "https://github.com/XWJACK/Wave"

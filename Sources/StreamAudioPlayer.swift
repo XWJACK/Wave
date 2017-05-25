@@ -123,7 +123,7 @@ open class StreamAudioPlayer {
     private var selfInstance: UnsafeMutableRawPointer? = nil
     /// Is first playing audio
     private var isFirstPlaying: Bool = true
-    
+    /// Temp offSet for seek or pause because of no audio data
     private var tempOffset: Int?
     
     public init?(_ type: AudioFileTypeID = kAudioFileMP3Type) {
@@ -132,12 +132,13 @@ open class StreamAudioPlayer {
         
         /// Create and open an audio file stream
         status = AudioFileStreamOpen(selfInstance, { (inClientData, inAudioFileStream, inPropertyID, ioFlags) in
-            /// 歌曲信息解析的回调
+            /// Call back for parse audio info.
             
             let mySelf: StreamAudioPlayer = converInstance(by: inClientData)
             /// Property size
             var propertySize: UInt32 = 0
-            /// On output, true if the property can be written. Currently, there are no writable audio file stream properties.（I have no idea）
+            /// On output, true if the property can be written. Currently, there are no writable audio file stream properties.
+            /// (I have no idea about this property.)
             var writable: DarwinBoolean = false
             
             /// Get property size
@@ -156,11 +157,11 @@ open class StreamAudioPlayer {
                 /// Assigned `packets` capacity to keep `append` thread-safe
                 mySelf.packets.reserveCapacity(Int(mySelf.dataPacketCount))
                 mySelf.delegate?.streamAudioPlayer(mySelf, parsedDataPacketCount: mySelf.dataPacketCount)
+                
             case kAudioFileStreamProperty_DataFormat:
                 AudioFileStreamGetProperty(inAudioFileStream, inPropertyID, &propertySize, &mySelf.audioStreamDescription)
                 
-            case kAudioFileStreamProperty_ReadyToProducePackets: //解析属性完成，接下来进行帧分离
-                
+            case kAudioFileStreamProperty_ReadyToProducePackets: /// Completed perase audio infomation
                 if mySelf.bitRate > 0 {
                     /// Calculate duration
                     mySelf.duration = (Double(mySelf.dataByteCount) * 8 ) / Double(mySelf.bitRate)
@@ -171,11 +172,8 @@ open class StreamAudioPlayer {
                 
                 mySelf.delegate?.streamAudioPlayerCompletedParsedAudioInfo(mySelf)
                 
-                /// Need to keep create audio queue in main thread.
-                // TODO: Is must in main thread or need thread runloop?
-                DispatchQueue.main.async {
-                    mySelf.createAudioQueue()
-                }
+                mySelf.createAudioQueue()
+                
             default: break
             }
         }, { (inClientData, inNumberBytes, inNumberPackets, inInputData, inPacketDescriptions) in
@@ -203,6 +201,7 @@ open class StreamAudioPlayer {
                 mySelf.tempOffset = nil
                 mySelf.delegate?.streamAudioPlayer(mySelf, didCompletedPlayFromTime: Double(offSet) * mySelf.duration / Double(mySelf.dataPacketCount))
             }
+            
         }, type, &audioFileStreamID)
         
         if !status.isSuccess {
@@ -211,6 +210,7 @@ open class StreamAudioPlayer {
         }
     }
     
+    /// Play or resume play from last
     open func play() {
         guard let audioQueue = audioQueue, !isRunning else { return }
         isRunning = true
@@ -222,6 +222,7 @@ open class StreamAudioPlayer {
         if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioQueue(.start(status)))) }
     }
     
+    /// Pause
     open func pause() {
         guard let audioQueue = audioQueue, isRunning else { return }
         isRunning = false
@@ -229,6 +230,7 @@ open class StreamAudioPlayer {
         if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioQueue(.pause(status)))) }
     }
     
+    /// Stop
     open func stop() {
         guard let audioQueue = audioQueue, isRunning else { return }
         isRunning = false
@@ -239,6 +241,10 @@ open class StreamAudioPlayer {
         if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioQueue(.stop(status)))) }
     }
     
+    /// Seek to time
+    ///
+    /// - Parameter time: TimeInterval
+    /// - Returns: Is success
     @discardableResult
     open func seek(toTime time: TimeInterval) -> Bool {
         stop()
@@ -261,6 +267,9 @@ open class StreamAudioPlayer {
     //        assert(noErr == status)
     //    }
     
+    /// Response audio data
+    ///
+    /// - Parameter data: Data
     open func respond(with data: Data) {
         parse(data: data)
     }
@@ -270,6 +279,9 @@ open class StreamAudioPlayer {
         if let audioFileStreamID = audioFileStreamID {
             status = AudioFileStreamClose(audioFileStreamID)
             if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioFileStream(.close(status)))) }
+        }
+        if let audioQueue = audioQueue {
+            AudioQueueDispose(audioQueue, true)
         }
     }
     
@@ -289,6 +301,7 @@ open class StreamAudioPlayer {
         return status.isSuccess ? time.mSampleTime / audioStreamDescription.mSampleRate : 0
     }
     
+    /// Create new output audio queue
     private func createAudioQueue() {
         /// New output audio queue
         status = AudioQueueNewOutput(&audioStreamDescription, { (inUserData, inAQ, inBuffer) in
@@ -301,11 +314,11 @@ open class StreamAudioPlayer {
             AudioQueueFreeBuffer(inAQ, inBuffer)
             
             mySelf.enAudioQueue()
-        }, selfInstance, CFRunLoopGetMain(), nil, 0, &audioQueue)
+        }, selfInstance, nil, nil, 0, &audioQueue)/// The event loop on which the callback function pointed to by the inCallbackProc parameter is to be called. If you specify NULL, the callback is invoked on one of the audio queue’s internal threads.
         
         if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioQueue(.newOutput(status)))) }
         
-        /// 添加属性监听事件 - 是否正在运行
+        /// Add listent property
         //        status = AudioQueueAddPropertyListener(audioQueue!, kAudioQueueProperty_IsRunning, { (inUserData, inAQ, inID) in
         //            ///控制播放器的状态
         //            let mySelf: StreamAudioPlayer = converInstance(by: inUserData!)
@@ -324,6 +337,7 @@ open class StreamAudioPlayer {
         //        assert(noErr == status)
     }
     
+    /// Enter buffer into audio queue
     private func enAudioQueue() {
         
         guard currentOffset < packets.count else {
@@ -388,6 +402,9 @@ open class StreamAudioPlayer {
         if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioQueue(.enqueueBuffer(status)))) }
     }
     
+    /// Parse audio
+    ///
+    /// - Parameter data: Data
     private func parse(data: Data) {
         /// Tell audio file stream to parse data.
         status = AudioFileStreamParseBytes(audioFileStreamID!,
