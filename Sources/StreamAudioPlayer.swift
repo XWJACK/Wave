@@ -15,6 +15,20 @@ public enum StreamAudioQueueStatus {
     case stop
 }
 
+/// Conver instance to self
+///
+/// - Parameter pointee: Instance
+/// - Returns: Self
+func converInstance<T: AnyObject>(by pointee: UnsafeMutableRawPointer) -> T {
+    return Unmanaged<T>.fromOpaque(pointee).takeUnretainedValue()
+}
+
+// MARK: - Extension OSStatus to check is success
+extension OSStatus {
+    var isSuccess: Bool { return self == noErr }
+}
+
+/// Stream audio player delegate
 public protocol StreamAudioPlayerDelegate: class {
     
     /// Ask when parsed duration
@@ -74,6 +88,7 @@ public protocol StreamAudioPlayerDelegate: class {
     func streamAudioPlayer(_ player: StreamAudioPlayer, anErrorOccur error: WaveError)
 }
 
+// MARK: - Extension with default
 public extension StreamAudioPlayerDelegate {
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDuration duration: TimeInterval?){}
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDataPacketCount dataPacketCount: UInt64) {}
@@ -87,8 +102,12 @@ public extension StreamAudioPlayerDelegate {
     func streamAudioPlayer(_ player: StreamAudioPlayer, didCompletedPlayAudio isEnd: Bool){}
 }
 
+/// Stream audio player
 open class StreamAudioPlayer {
     
+    //MARK: - public property
+    
+    /// Stream audio player delegate
     open weak var delegate: StreamAudioPlayerDelegate?
     /// How many packets when loaded
     open var packetPerLoad: Int = 500
@@ -104,6 +123,8 @@ open class StreamAudioPlayer {
     public var currentTime: TimeInterval { return playedTime() + timeOffset }
     /// Audio queue is running
     public private(set) var isRunning: Bool = false
+    
+    //MARK: - private property
     
     /// Current packet offset
     private var currentOffset: Int = 0
@@ -126,6 +147,9 @@ open class StreamAudioPlayer {
     /// Temp offSet for seek or pause because of no audio data
     private var tempOffset: Int?
     
+    /// Init stream audio player
+    ///
+    /// - Parameter type: AudioFileTypeID, default is mp3 type.
     public init?(_ type: AudioFileTypeID = kAudioFileMP3Type) {
         
         selfInstance = unsafeBitCast(self, to: UnsafeMutableRawPointer.self)
@@ -210,6 +234,19 @@ open class StreamAudioPlayer {
         }
     }
     
+    deinit {
+        selfInstance = nil
+        if let audioFileStreamID = audioFileStreamID {
+            status = AudioFileStreamClose(audioFileStreamID)
+            if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioFileStream(.close(status)))) }
+        }
+        if let audioQueue = audioQueue {
+            AudioQueueDispose(audioQueue, true)
+        }
+    }
+    
+    //MARK: - Control
+    
     /// Play or resume play from last
     open func play() {
         guard let audioQueue = audioQueue, !isRunning else { return }
@@ -267,22 +304,13 @@ open class StreamAudioPlayer {
     //        assert(noErr == status)
     //    }
     
+    //MARK: - public function
+    
     /// Response audio data
     ///
     /// - Parameter data: Data
     open func respond(with data: Data) {
         parse(data: data)
-    }
-    
-    deinit {
-        selfInstance = nil
-        if let audioFileStreamID = audioFileStreamID {
-            status = AudioFileStreamClose(audioFileStreamID)
-            if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioFileStream(.close(status)))) }
-        }
-        if let audioQueue = audioQueue {
-            AudioQueueDispose(audioQueue, true)
-        }
     }
     
     /// AudioQueue has been running time, not current play time
@@ -300,6 +328,8 @@ open class StreamAudioPlayer {
         if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioQueue(.getCurrentTime(status)))) }
         return status.isSuccess ? time.mSampleTime / audioStreamDescription.mSampleRate : 0
     }
+    
+    //MARK: - private function
     
     /// Create new output audio queue
     private func createAudioQueue() {
