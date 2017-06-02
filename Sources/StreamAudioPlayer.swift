@@ -269,7 +269,7 @@ open class StreamAudioPlayer {
     
     /// Stop
     open func stop() {
-        guard let audioQueue = audioQueue, isRunning else { return }
+        guard let audioQueue = audioQueue else { return }
         isRunning = false
         isFirstPlaying = true
         timeOffset = 0
