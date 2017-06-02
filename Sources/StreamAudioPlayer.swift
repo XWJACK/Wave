@@ -92,9 +92,7 @@ public protocol StreamAudioPlayerDelegate: class {
 public extension StreamAudioPlayerDelegate {
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDuration duration: TimeInterval?){}
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedDataPacketCount dataPacketCount: UInt64) {}
-    func streamAudioPlayer(_ player: StreamAudioPlayer, parsedProgress progress: Progress){
-        if progress.fractionCompleted > 0.01 { player.play() }
-    }
+    func streamAudioPlayer(_ player: StreamAudioPlayer, parsedProgress progress: Progress){}
     func streamAudioPlayer(_ player: StreamAudioPlayer, didCompletedPlayFromTime time: TimeInterval){}
     func streamAudioPlayerCompletedParsedAudioInfo(_ player: StreamAudioPlayer){}
     //    func streamAudioPlayer(_ player: StreamAudioPlayer, queueStatusChange status: StreamAudioQueueStatus){}
@@ -109,8 +107,8 @@ open class StreamAudioPlayer {
     
     /// Stream audio player delegate
     open weak var delegate: StreamAudioPlayerDelegate?
-    /// How many packets when loaded
-    open var packetPerLoad: Int = 500
+    /// Least packets for play audio
+    open var leastPlayPackets: Int = 50
     /// Audio bit rate
     public private(set) var bitRate: UInt32 = 0
     /// Number of audio data bytes
@@ -145,7 +143,7 @@ open class StreamAudioPlayer {
     /// Is first playing audio
     private var isFirstPlaying: Bool = true
     /// Temp offSet for seek or pause because of no audio data
-    private var tempOffset: Int?
+    private var tempOffset: Int? = 0
     
     /// Init stream audio player
     ///
@@ -221,7 +219,7 @@ open class StreamAudioPlayer {
             }
             
             if let offSet = mySelf.tempOffset,
-                offSet < mySelf.packets.count {
+                offSet <= mySelf.packets.count + mySelf.leastPlayPackets {
                 mySelf.tempOffset = nil
                 mySelf.delegate?.streamAudioPlayer(mySelf, didCompletedPlayFromTime: Double(offSet) * mySelf.duration / Double(mySelf.dataPacketCount))
             }
@@ -382,9 +380,7 @@ open class StreamAudioPlayer {
             return
         }
         
-        var endOffset = currentOffset + packetPerLoad
-        if endOffset >= packets.count { endOffset = packets.count }
-        
+        let endOffset = packets.count
         
         /// New buffer
         var newAudioQueueBuffer: AudioQueueBufferRef? = nil
