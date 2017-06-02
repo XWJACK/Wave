@@ -5,11 +5,11 @@
 ![macOS 10.9+](https://img.shields.io/badge/macOS-10.9%2B-blue.svg)
 ![Swift 3.1+](https://img.shields.io/badge/Swift-3.0%2B-orange.svg)
 ![Carthage compatible](https://img.shields.io/badge/Carthage-compatible-brightgreen.svg)
-![pod](https://img.shields.io/badge/pod-v0.2.1-brightgreen.svg)
+![pod](https://img.shields.io/badge/pod-v0.2.2-brightgreen.svg)
 
 ## Overview
 
-Simple stream audio player
+Simple stream audio player.
 
 ## Installation
 
@@ -49,7 +49,7 @@ $ brew install carthage
 To integrate Wave into your Xcode project using Carthage, specify it in your `Cartfile`:
 
 ```ogdl
-github "XWJACK/Wave" ~> 0.2.1
+github "XWJACK/Wave" ~> 0.2.2
 ```
 
 Run `carthage update` to build the framework and drag the built `Wave.framework` into your Xcode project.
@@ -62,21 +62,30 @@ Run `carthage update` to build the framework and drag the built `Wave.framework`
 let player = StreamAudioPlayer()
 ```
 
-2. Then response data from network or local
+2. Response data from network or local
 
 ```swift
 player.response(with: data)
 /// player will auto play when parsed audio data.
 ```
 
-3. Set Delegate to Self
+3. Custom set property
+
+At least `leastPlayPackets` packets to start playing.
+
+```swift
+player?.leastPlayPackets = 100
+```
+
+4. Set Delegate to Self
 
 ```swift
 player.delegate = self
 
-    /// You can custom decided when to play audio, default is `progress.fractionCompleted > 0.01`
     func streamAudioPlayer(_ player: StreamAudioPlayer, parsedProgress progress: Progress) {
-        if progress.fractionCompleted > 0.01 { player.play() }
+        DispatchQueue.main.async {
+            /// Display progress.
+        }
     }
 
     func streamAudioPlayerCompletedParsedAudioInfo(_ player: StreamAudioPlayer) {
@@ -87,6 +96,7 @@ player.delegate = self
     
     func streamAudioPlayer(_ player: StreamAudioPlayer, didCompletedPlayFromTime time: TimeInterval) {
         DispatchQueue.main.async {
+            /// Dismiss buffer indicator.
             /// Seek to time successful or resume play when data has been parsed.
             self.player?.play()
         }
@@ -95,24 +105,15 @@ player.delegate = self
     func streamAudioPlayer(_ player: StreamAudioPlayer, didCompletedPlayAudio isEnd: Bool) {
         DispatchQueue.main.async {
             if isEnd {
-                /// Go next music
+                /// Next music
             } else {
-                /// Resume play because of waiting audio data.
-            }
-        }
-    }
-    
-    /// Progress for parse data
-    func streamAudioPlayer(_ player: StreamAudioPlayer, parsedProgress progress: Progress) {
-        DispatchQueue.main.async {
-            if progress.fractionCompleted > 0.01 {
-                self.player?.play()
+                /// Showing buffer indicator.
             }
         }
     }
 ```
 
-4. Control
+5. Control
 
 ```swift
 player?.play()
@@ -121,6 +122,28 @@ player?.stop()
 /// Return true if time is already can be seek, or this time is out of range between 0 to duration.
 /// Otherwise you can using delegate to listen if data is not full parsed.
 player?.seek(toTime: 1024)
+```
+
+> You should not during seek by UISlider with valueChanged, you can using like this.
+
+```swift
+/// Add valueChanged target to timeSliderValueChange
+timeSlider.addTarget(self, action: #selector(timeSliderValueChange(_:)), for: .valueChanged)
+
+/// Add touchUpInside and touchUpOutside target to timeSliderSeek
+timeSlider.addTarget(self, action: #selector(timeSliderSeek(_:)), for: .touchUpInside)
+timeSlider.addTarget(self, action: #selector(timeSliderSeek(_:)), for: .touchUpOutside)
+        
+@objc fileprivate func timeSliderValueChange(_ sender: MusicPlayerSlider) {
+}
+    
+@objc fileprivate func timeSliderSeek(_ sender: MusicPlayerSlider) {
+    if player?.seek(toTime: TimeInterval(sender.value)) == true {
+        player?.play()
+    } else {
+        /// Show buffer indicator
+    }
+}
 ```
 
 ## Flow Diagram for StreamAudioPlayer

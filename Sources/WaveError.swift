@@ -8,6 +8,7 @@
 
 import Foundation
 
+/// Wave error
 public enum WaveError: Error {
     
     public enum StreamAudioPlayerError {
