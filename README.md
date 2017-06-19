@@ -154,4 +154,8 @@ timeSlider.addTarget(self, action: #selector(timeSliderSeek(_:)), for: .touchUpO
 
 The best demo is my graduation project: [Music](https://github.com/XWJACK/Music)
 
+## License
+
+Wave is released under the MIT license. [See LICENSE](https://github.com/XWJACK/Wave/blob/master/LICENSE) for details.
+
 
