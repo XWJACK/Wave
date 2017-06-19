@@ -2,7 +2,7 @@ Pod::Spec.new do |s|
   s.name = "Wave"
   s.version = "0.2.2"
   s.license = { :type => "MIT", :file => "LICENSE" }
-  s.summary = "XWJACK Audio Player Library"
+  s.summary = "Audio Player Library"
   s.homepage = "https://github.com/XWJACK/Wave"
   s.author = { "Jack" => "xuwenjiejack@gmail.com" }
   s.source = { :git => "https://github.com/XWJACK/Wave.git", :tag => s.version }
