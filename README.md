@@ -3,9 +3,9 @@
 ![Xcode 8.3+](https://img.shields.io/badge/Xcode-8.3%2B-blue.svg)
 ![iOS 8.0+](https://img.shields.io/badge/iOS-8.0%2B-blue.svg)
 ![macOS 10.9+](https://img.shields.io/badge/macOS-10.9%2B-blue.svg)
-![Swift 3.1+](https://img.shields.io/badge/Swift-3.0%2B-orange.svg)
-![Carthage compatible](https://img.shields.io/badge/Carthage-compatible-brightgreen.svg)
-![pod](https://img.shields.io/badge/pod-v0.2.2-brightgreen.svg)
+![Swift 3.0+](https://img.shields.io/badge/Swift-3.0%2B-orange.svg)
+![Carthage](https://img.shields.io/badge/Carthage-compatible-brightgreen.svg)
+![Version](https://img.shields.io/badge/pod-v0.2.2-brightgreen.svg)
 
 ## Overview
 
@@ -27,6 +27,8 @@ target '<Your App Target>' do
   pod 'Wave', :git => 'git@github.com:XWJACK/Wave.git'
 end
 ```
+
+> ⚠️ Because of 'Wave' has been using in CocoaPods with another personal. So, you need add `:git => 'git@github.com:XWJACK/Wave.git'` after `pod 'Wave'` .
 
 Then run the following command:
 
@@ -146,12 +148,16 @@ timeSlider.addTarget(self, action: #selector(timeSliderSeek(_:)), for: .touchUpO
 }
 ```
 
-## Flow Diagram for StreamAudioPlayer
+## Flow Diagram
 
 ![AudioToolBox StreamAudioPlayer](http://o9omj1fgd.bkt.clouddn.com/blog/Music/images/AudioToolBox_StreamAudioPlayer.png)
 
 ## Demo
 
 The best demo is my graduation project: [Music](https://github.com/XWJACK/Music)
+
+## License
+
+Wave is released under the MIT license. [See LICENSE](https://github.com/XWJACK/Wave/blob/master/LICENSE) for details.
 
 

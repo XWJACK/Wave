@@ -1,19 +1,34 @@
 //
 //  StreamAudioPlayer.swift
-//  AudioPlayer
 //
-//  Created by Jack on 4/19/17.
-//  Copyright © 2017 Jack. All rights reserved.
+//  Copyright (c) 2017 Jack
 //
+//  Permission is hereby granted, free of charge, to any person obtaining a copy
+//  of this software and associated documentation files (the "Software"), to deal
+//  in the Software without restriction, including without limitation the rights
+//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+//  copies of the Software, and to permit persons to whom the Software is
+//  furnished to do so, subject to the following conditions:
+//
+//  The above copyright notice and this permission notice shall be included in all
+//  copies or substantial portions of the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+//  SOFTWARE.
 
 import Foundation
 import AudioToolbox
 
-public enum StreamAudioQueueStatus {
-    case playing
-    case paused
-    case stop
-}
+//public enum StreamAudioQueueStatus {
+//    case playing
+//    case paused
+//    case stop
+//}
 
 /// Conver instance to self
 ///
@@ -194,6 +209,7 @@ open class StreamAudioPlayer {
                 
                 mySelf.delegate?.streamAudioPlayerCompletedParsedAudioInfo(mySelf)
                 
+                /// Create audio queue
                 mySelf.createAudioQueue()
                 
             default: break
@@ -234,10 +250,12 @@ open class StreamAudioPlayer {
     
     deinit {
         selfInstance = nil
+        /// Close audio file stream.
         if let audioFileStreamID = audioFileStreamID {
             status = AudioFileStreamClose(audioFileStreamID)
             if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioFileStream(.close(status)))) }
         }
+        /// Dispose audio queue.
         if let audioQueue = audioQueue {
             AudioQueueDispose(audioQueue, true)
         }
@@ -276,7 +294,7 @@ open class StreamAudioPlayer {
         if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioQueue(.stop(status)))) }
     }
     
-    /// Seek to time
+    /// Seek to time.
     ///
     /// - Parameter time: TimeInterval
     /// - Returns: Is success
@@ -304,14 +322,14 @@ open class StreamAudioPlayer {
     
     //MARK: - public function
     
-    /// Response audio data
+    /// Response audio data.
     ///
     /// - Parameter data: Data
     open func respond(with data: Data) {
         parse(data: data)
     }
     
-    /// AudioQueue has been running time, not current play time
+    /// AudioQueue has been running time, not current play time.
     ///
     /// - Returns: TimeInterval
     public final func playedTime() -> TimeInterval {
@@ -371,8 +389,7 @@ open class StreamAudioPlayer {
         guard currentOffset < packets.count else {
             /// All audio datas were play completed
             if UInt64(currentOffset) >= dataPacketCount { delegate?.streamAudioPlayer(self, didCompletedPlayAudio: true) }
-                /// Waitting for data to resume play
-            else {
+            else {/// Waitting for data to resume play
                 tempOffset = currentOffset
                 isFirstPlaying = true
                 delegate?.streamAudioPlayer(self, didCompletedPlayAudio: false)
@@ -428,7 +445,7 @@ open class StreamAudioPlayer {
         if !status.isSuccess { delegate?.streamAudioPlayer(self, anErrorOccur: .streamAudioPlayer(.audioQueue(.enqueueBuffer(status)))) }
     }
     
-    /// Parse audio
+    /// Parse audio.
     ///
     /// - Parameter data: Data
     private func parse(data: Data) {
