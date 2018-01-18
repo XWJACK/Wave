@@ -2,9 +2,9 @@
 
 ![iOS 8.0+](https://img.shields.io/badge/iOS-8.0%2B-blue.svg)
 ![macOS 10.9+](https://img.shields.io/badge/macOS-10.9%2B-blue.svg)
-![Swift 3.2](https://img.shields.io/badge/Swift-3.2%2B-orange.svg)
+![Swift 4.0](https://img.shields.io/badge/Swift-4.0-orange.svg)
 ![Carthage](https://img.shields.io/badge/Carthage-compatible-brightgreen.svg)
-![Version](https://img.shields.io/badge/pod-v0.2.3-brightgreen.svg)
+![Version](https://img.shields.io/badge/pod-v0.2.4-brightgreen.svg)
 
 ## Overview
 
