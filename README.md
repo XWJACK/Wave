@@ -1,11 +1,10 @@
 # Wave
 
-![Xcode 8.3+](https://img.shields.io/badge/Xcode-8.3%2B-blue.svg)
 ![iOS 8.0+](https://img.shields.io/badge/iOS-8.0%2B-blue.svg)
 ![macOS 10.9+](https://img.shields.io/badge/macOS-10.9%2B-blue.svg)
-![Swift 3.0+](https://img.shields.io/badge/Swift-3.0%2B-orange.svg)
+![Swift 3.2](https://img.shields.io/badge/Swift-3.2%2B-orange.svg)
 ![Carthage](https://img.shields.io/badge/Carthage-compatible-brightgreen.svg)
-![Version](https://img.shields.io/badge/pod-v0.2.2-brightgreen.svg)
+![Version](https://img.shields.io/badge/pod-v0.2.3-brightgreen.svg)
 
 ## Overview
 
@@ -51,7 +50,7 @@ $ brew install carthage
 To integrate Wave into your Xcode project using Carthage, specify it in your `Cartfile`:
 
 ```ogdl
-github "XWJACK/Wave" ~> 0.2.2
+github "XWJACK/Wave"
 ```
 
 Run `carthage update` to build the framework and drag the built `Wave.framework` into your Xcode project.

@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name = "Wave"
-  s.version = "0.2.2"
+  s.version = "0.2.3"
   s.license = { :type => "MIT", :file => "LICENSE" }
   s.summary = "Audio Player Library"
   s.homepage = "https://github.com/XWJACK/Wave"
@@ -14,5 +14,5 @@ Pod::Spec.new do |s|
   s.public_header_files = ["Sources/Wave.h"]
 
   s.requires_arc = true
-  s.pod_target_xcconfig = { 'SWIFT_VERSION' => '3.0' }
+  s.pod_target_xcconfig = { 'SWIFT_VERSION' => '3.2' }
 end
